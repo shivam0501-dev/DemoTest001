@@ -1,0 +1,206 @@
+﻿@model DemoTest001.DataAccess.Entity.State;
+
+<div class="container mt-5">
+    <form id="StateForm">
+        <input type="hidden" id="StateId" value="0" name="StateId" />
+        <div class="form-group">
+            <label for="CountryCode">Country Name</label>
+            <select class="form-select" id="CountryID" name="CountryID">
+            </select>
+            <div class="text-danger" id="txtCountryID"></div>
+        </div>
+        <div class="form-group">
+            <label for="StateName">State Name</label>
+            <input type="text" class="form-control" id="StateName" placeholder="Enter State Name" name="StateName">
+        </div>
+        <div class="form-group">
+            <label for="StateCode">State Code</label>
+            <input type="text" class="form-control" id="StateCode" placeholder="Enter State Code" name="StateCode">
+        </div>
+        <button type="button" class="btn btn-primary m-2" onclick="btnAddOrUpdate()">Save</button>
+    </form>
+    <div class="mt-5">
+        <table class="table table-striped table-bordered table-hover" id="StateGrid">
+            <thead>
+                <tr>
+                    <th>
+                        State ID
+                    </th>
+                    <th>
+                        State Name
+                    </th>
+                    <th>
+                        State Code
+                    </th>
+                    <th>
+                        Country Name
+                    </th>
+                    <th>
+                        Action
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
+
+
+
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    var datatable;
+    $(document).ready(function () {
+        loadDatable();
+        BindCountry();
+    });
+
+    function loadDatable() {
+        datatable = $('#StateGrid').DataTable({
+            "ajax": { url: '/State/GetAllState' },
+            "columns": [
+                { data: 'stateId' },
+                { data: 'stateName' },
+                { data: 'stateCode' },
+                { data: 'country.countryName' },
+                {
+                    data: 'stateId',
+                    'render': function (data) {
+                        return `<div class="w-75 btn-group" role="group">
+
+                                                                <a onclick=EditState('/State/EditState?id=${data}')  class="mx-2 btn btn-primary"><i class="bi bi-pencil-square"></i>Edit</a>
+                                                                        <a onclick=DeleteState('/State/DeleteState?id=${data}') class="mx-2 btn btn-danger"><i class="bi bi-trash-fill"></i>Delete</a>
+
+                                        </div>`
+                    },
+                    "width": "25%"
+                }
+            ],
+            "pageLength": 5.
+
+        });
+    }
+
+    function btnAddOrUpdate() {
+        if ($("#CountryID").val() == "0" || $("#CountryID").val() == 0) {
+            $("#txtCountryID").text("Please Select Country");
+        }
+        else{
+
+            $.ajax({
+                type: 'POST',
+                url: '/State/AddOrUpdateState',
+                data: $("#StateForm").serialize(),
+                success: function (response) {
+                    if (response.statusCode === "1") {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Added!',
+                            text: response.statusMessage,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        datatable.ajax.reload();
+                        $('#StateForm')[0].reset();
+                    }
+                    else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: response.statusMessage,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert('Error: ' + error);
+                }
+            });
+        }
+    }
+
+    function DeleteState(url) {
+        debugger;
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    success: function (response) {
+                        if (response.statusCode === "1") {
+                            datatable.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: response.statusMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            datatable.ajax.reload();
+                        }
+                        else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.statusMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        }
+                    }
+                })
+            }
+        })
+    }
+
+    function EditState(url) {
+        $.ajax({
+            type: 'Post',
+            url: url,
+            success: function (response) {
+                $("#StateName").val(response.stateCode);
+                $("#StateCode").val(response.stateName);
+                $("#StateId").val(response.stateId);
+                $("#CountryID").val(response.countryID);
+            },
+            error: function (xhr, status, error) {
+                alert('Error: ' + error);
+            }
+        });
+    }
+
+    function BindCountry() {
+        $.ajax({
+            type: 'GET',
+            url: '/State/BindCountry',
+            success: function (response) {
+                var countryDropdown = $('#CountryID');
+                countryDropdown.empty();
+                countryDropdown.append("<option value='0'>--Select Country--</option>");
+                response.forEach(function (country) {
+                    countryDropdown.append($('<option>', {
+                        value: country.countryId,
+                        text: country.countryName
+                    }));
+                });
+            },
+            error: function (xhr, status, error) {
+                alert('Error: ' + error);
+            }
+        });
+    }
+
+
+</script>
+

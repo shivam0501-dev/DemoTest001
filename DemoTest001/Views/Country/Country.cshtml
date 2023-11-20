@@ -1,0 +1,169 @@
+﻿@model DemoTest001.DataAccess.Entity.Country;
+
+
+<div class="container mt-5">
+    <form id="CountryForm">
+        <input type="hidden" id="CountryId" value="0" name="CountryId" />
+        <div class="form-group">
+            <label for="CountryName">Country Name</label>
+            <input type="text" class="form-control" id="CountryName" placeholder="Enter Country Name" name="CountryName">
+        </div>
+        <div class="form-group">
+            <label for="CountryCode">Country Code</label>
+            <input type="text" class="form-control" id="CountryCode" placeholder="Enter Country Code" name="CountryCode">
+        </div>
+
+        <button type="button" class="btn btn-primary m-2" onclick="btnAddOrUpdate()">Save</button>
+    </form>
+    <div class="mt-5">
+        <table class="table table-striped table-bordered table-hover" id="CountryGrid">
+            <thead>
+                <tr>
+                    <th>
+                        Country ID
+                    </th>
+                    <th>
+                        Country Name
+                    </th>
+                    <th>
+                        Country Code
+                    </th>
+                    <th>
+                        Action
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+    </div>
+
+
+
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+    var datatable;
+    $(document).ready(function () {
+        loadDatable();
+    });
+
+    function loadDatable() {
+        datatable = $('#CountryGrid').DataTable({
+            "ajax": { url: '/Country/GetAllCountry' },
+            "columns": [
+                { data: 'countryId' },
+                { data: 'countryName' },
+                { data: 'countryCode' },
+                {
+                    data: 'countryId',
+                    'render': function (data) {
+                        return `<div class="w-75 btn-group" role="group">
+
+                                                <a onclick=EditCountry('/Country/EditCountry?id=${data}')  class="mx-2 btn btn-primary"><i class="bi bi-pencil-square"></i>Edit</a>
+                                                    <a onclick=DeleteCountry('/Country/DeleteCountry?id=${data}') class="mx-2 btn btn-danger"><i class="bi bi-trash-fill"></i>Delete</a>
+
+                                    </div>`
+                    },
+                    "width": "25%"
+                }
+            ],
+            "pageLength": 5. // Set the number of records per page
+
+        });
+    }
+
+
+    function btnAddOrUpdate() {
+        $.ajax({
+            type: 'POST',
+            url: '/Country/AddOrUpdateCountry',
+            data: $("#CountryForm").serialize(),
+            success: function (response) {
+                if (response.statusCode === "1") {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Added!',
+                        text: response.statusMessage,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    datatable.ajax.reload();
+                    $('#CountryForm')[0].reset();
+                }
+                else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: response.statusMessage,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Error: ' + error);
+            }
+        });
+    }
+    function DeleteCountry(url) {
+        debugger;
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    success: function (response) {
+                        if (response.statusCode === "1") {
+                            datatable.ajax.reload();
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Deleted!',
+                                text: response.statusMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                            datatable.ajax.reload();
+                        }
+                        else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: response.statusMessage,
+                                showConfirmButton: false,
+                                timer: 1500
+                            });
+                        }
+                    }
+                })
+            }
+        })
+    }
+
+    function EditCountry(url) {
+        debugger;
+        $.ajax({
+            type: 'Post',
+            url: url,
+            success: function (response) {
+                $("#CountryCode").val(response.countryCode);
+                $("#CountryName").val(response.countryName);
+                $("#CountryId").val(response.countryId);
+            },
+            error: function (xhr, status, error) {
+                alert('Error: ' + error);
+            }
+        });
+    }
+
+</script>
+
